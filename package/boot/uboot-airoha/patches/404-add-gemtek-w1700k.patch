@@ -154,7 +154,7 @@ Signed-off-by: Kenneth Kasilag <kenneth@kasilag.me>
 +CONFIG_SHA512=y
 --- /dev/null
 +++ b/defenvs/an7581_w1700k_env
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,32 @@
 +loadaddr=0x81800000
 +initaddr=0x89000000
 +ipaddr=192.168.1.1
@@ -167,6 +167,7 @@ Signed-off-by: Kenneth Kasilag <kenneth@kasilag.me>
 +boot_recovery=led $bootled_rec on ; run ubi_read_recovery && bootm $initaddr#$bootconf ; led $bootled_rec off
 +boot_tftp=tftpboot $initaddr $bootfile && bootm $initaddr#$bootconf
 +boot_tftp_forever=led $bootled_rec on ; while true ; do run boot_tftp ; sleep 1 ; done
++boot_rescue=led $bootled_pwr off ; run ubi_prepare ; run boot_recovery ; run boot_tftp_forever
 +bootconf=config-1
 +bootcmd=run boot_ubi
 +bootdelay=3
@@ -178,13 +179,13 @@ Signed-off-by: Kenneth Kasilag <kenneth@kasilag.me>
 +bootmenu_1=Boot system via TFTP.=run boot_tftp ; run bootmenu_confirm_return
 +bootmenu_2=Boot recovery system from flash.=run boot_recovery ; run bootmenu_confirm_return
 +bootmenu_3=Reboot.=reset
-+check_buttons=if button reset ; then run boot_tftp_forever ; fi
++check_buttons=if button reset ; then run boot_rescue ; fi
 +preboot=run check_buttons
 +ubi_read_production=ubi read $loadaddr fit && iminfo $loadaddr
 +ubi_read_recovery=ubi check recovery && ubi read $initaddr recovery
 +ubi_prepare=ubi part ubi || run ubi_format ; run ubi_create_vols ; env exists _init_env && run _init_env
 +ubi_format=ubi detach ; mtd erase ubi && ubi part ubi ; reset
-+ubi_create_vols=ubi check ubootenv || ubi create ubootenv 0x1f000 dynamic ; ubi check ubootenv2 || ubi create ubootenv2 0x1f000 dynamic ; ubi check factory || ubi create factory 0x10000 static
++ubi_create_vols=ubi check ubootenv || ubi create ubootenv 0x1f000 dynamic ; ubi check ubootenv2 || ubi create ubootenv2 0x1f000 dynamic ; ubi check factory || ubi create factory 0x10000 static ; ubi check recovery || ubi create recovery 0x2000000 dynamic
 +_init_env=setenv _init_env ; saveenv ; saveenv
 --- /dev/null
 +++ b/dts/upstream/src/arm64/airoha/an7581-w1700k-ubi.dts
