@@ -26,7 +26,7 @@ gemtek_mac_bytes() {
 # vendor partition, which the install leaves untouched. Rebuild it when it is
 # missing or empty, as after the chainloader formatted the ubi partition.
 gemtek_prepare_factory() {
-	local ubidev vol mtd dsd ebs off eeprom wan lan fan serial mac
+	local ubidev vol mtd dsd ebs off eeprom wan lan fan serial mac model
 	local blob="/tmp/factory.bin"
 
 	ubidev="$(nand_find_ubi ubi)" || return 0
@@ -43,10 +43,12 @@ gemtek_prepare_factory() {
 	fan="$(echo "$dsd" | sed -n '/^fan_id=/{s///p;q}')"
 	serial="$(echo "$dsd" | sed -n '/^serial_number=/{s///p;q}')"
 
+	# The serial number starts with the model: gemtek,w1700k-ubi is a W1700K.
+	model="$(board_name | sed 's/^gemtek,//;s/-ubi$//' | tr a-z A-Z)"
 	case "$serial" in
-	XR1710G*) ;;
+	"$model"*) ;;
 	*)
-		v "factory: serial number '$serial' does not match, not rebuilding"
+		v "factory: serial number '$serial' does not match $model, not rebuilding"
 		return 0
 		;;
 	esac
@@ -122,12 +124,12 @@ platform_do_upgrade() {
 
 	case "$board" in
 		gemtek,w1700k-ubi|\
-		nokia,xg-040g-md-ubi|\
-		quantum,q1000k-ubi)
-			fit_do_upgrade "$1"
-			;;
 		gemtek,xr1710g-ubi)
 			gemtek_prepare_factory
+			fit_do_upgrade "$1"
+			;;
+		nokia,xg-040g-md-ubi|\
+		quantum,q1000k-ubi)
 			fit_do_upgrade "$1"
 			;;
 		*)
